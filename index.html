@@ -71,10 +71,14 @@
             width:94vw;
             max-width:1000px;
             position:relative;
+            display:flex;
+            align-items:center;
+            justify-content:center;
         }
+        
         canvas{
             width:100%;
-            height:100%;
+            height:auto;
             border-radius:10px;
             background:#262626;
             display:block;
@@ -258,8 +262,14 @@ const firebaseConfig = {
     appId: "1:1094541793526:web:05b517e0d28c80467f34d7"
 };
 
-firebase.initializeApp(firebaseConfig);
+try {
+    firebase.initializeApp(firebaseConfig);
+} catch(e) {
+    console.log('Firebase already initialized or error:', e.message);
+}
+
 const database = firebase.database();
+console.log('Firebase initialized successfully');
 
 /* ---------- TIME CONSTANTS (UTC+8) ---------- */
 function inTzOffset(dateStr, offsetHours){
@@ -343,25 +353,27 @@ const ctx = canvas.getContext('2d');
 const container = document.getElementById('canvas-container');
 
 function resizeCanvas(){
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    const width = container.offsetWidth;
+    const height = Math.min(window.innerHeight * 0.55, 500);
     
-    const lineOffset = 0.08 / 3.5 / 2;
-    const lineSeparation = lineOffset * 2;
-    const arcRadiusMax = (Math.max(BOTTOM_DURATION, TOP_DURATION) / 2 / TOTAL_DURATION) * 400;
-    const contentHeight = lineSeparation + arcRadiusMax * 2;
-    const desiredH = contentHeight * 1.25;
+    container.style.height = height + 'px';
     
-    container.style.height = Math.min(desiredH, vh * 0.55) + 'px';
-
-    const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.setTransform(dpr,0,0,dpr,0,0);
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    console.log('Canvas resized:', width, 'x', height);
     drawScene();
 }
+
 window.addEventListener('resize', resizeCanvas);
+window.addEventListener('load', resizeCanvas);
+
+// Initial resize
+setTimeout(resizeCanvas, 100);
 
 function timeToX(t, width){
     const clamped = Math.min(TIMELINE_END, Math.max(TIMELINE_START,t));
@@ -402,8 +414,6 @@ function drawWire(opts){
 
     const radiusFrac = arcRadiusTime / globalDuration;
     const arcRadiusPx = (radiusFrac * width) / 1.5;
-
-    const arcCenterX = startX + (endX-startX)*tAbsMid;
 
     function path(t){
         const x = startX + (endX-startX)*t;
@@ -559,7 +569,7 @@ function createFloatingHearts(){
 }
 
 missYouBtn.onclick = () => {
-    database.ref('missYouCount').transaction(current => (current || 0) + 1);
+    database.ref('missYouCount').transaction(current => (current || 0) + 1).catch(err => console.error('Firebase error:', err));
     createFloatingHearts();
     missYouBtn.classList.add('active');
     setTimeout(() => missYouBtn.classList.remove('active'), 300);
@@ -569,7 +579,7 @@ missYouBtn.onclick = () => {
 database.ref('missYouCount').on('value', snap => {
     missYouCount = snap.val() || 0;
     updateMissYouDisplay();
-});
+}, err => console.error('Error reading missYouCount:', err));
 
 /* ---------- IDEAS LIST ---------- */
 const ideaInput = document.getElementById('idea-input');
@@ -606,12 +616,12 @@ function renderIdeas(snapshot){
 function addIdea(){
     const text = ideaInput.value.trim();
     if(text === '') return;
-    database.ref('ideas').push(text);
+    database.ref('ideas').push(text).catch(err => console.error('Error adding idea:', err));
     ideaInput.value = '';
 }
 
 function removeIdea(key){
-    database.ref(`ideas/${key}`).remove();
+    database.ref(`ideas/${key}`).remove().catch(err => console.error('Error removing idea:', err));
 }
 
 addIdeaBtn.onclick = addIdea;
@@ -622,14 +632,15 @@ ideaInput.onkeypress = (e) => {
 // Listen to ideas
 database.ref('ideas').on('value', snap => {
     renderIdeas(snap);
-});
+}, err => console.error('Error reading ideas:', err));
 
 /* ---------- INITIALIZATION ---------- */
-resizeCanvas();
 updateCountdown();
 
 setInterval(updateCountdown, 1000);
 setInterval(drawScene, 1000);
+
+console.log('Page initialized successfully');
 </script>
 </body>
 </html>
