@@ -243,11 +243,11 @@
         <button class="add-idea-btn" id="add-idea-btn">add</button>
     </div>
     <div class="ideas-list" id="ideas-list"></div>
-    <div class="info-text">stored in firebase</div>
+    <div class="info-text">synced with firebase</div>
 </div>
 
 <script>
-/* ---------- FIREBASE CONFIG ---------- */
+/* ---------- FIREBASE INIT ---------- */
 const firebaseConfig = {
     apiKey: "AIzaSyA10f0kbWHZGm9EXhpfDsTLKVJxJEN0zJM",
     authDomain: "miss-you-in-hk.firebaseapp.com",
@@ -525,9 +525,17 @@ function drawScene(){
     });
 }
 
-/* ---------- MISS YOU BUTTON ---------- */
+/* ---------- MISS YOU BUTTON WITH HEART ANIMATION ---------- */
 const missYouBtn = document.getElementById('miss-you-btn');
 let missYouCount = 0;
+
+function updateMissYouDisplay(){
+    if(missYouCount === 0){
+        missYouBtn.textContent = 'miss you ❤️';
+    }else{
+        missYouBtn.textContent = `miss you ❤️ (${missYouCount})`;
+    }
+}
 
 function createFloatingHearts(){
     const rect = missYouBtn.getBoundingClientRect();
@@ -550,23 +558,14 @@ function createFloatingHearts(){
     }
 }
 
-function updateMissYouDisplay(){
-    if(missYouCount === 0){
-        missYouBtn.textContent = 'miss you ❤️';
-    }else{
-        missYouBtn.textContent = `miss you ❤️ (${missYouCount})`;
-    }
-}
-
 missYouBtn.onclick = () => {
-    // Increment in Firebase
     database.ref('missYouCount').transaction(current => (current || 0) + 1);
     createFloatingHearts();
     missYouBtn.classList.add('active');
     setTimeout(() => missYouBtn.classList.remove('active'), 300);
 };
 
-// Listen to miss you counter from Firebase
+// Listen to miss you counter
 database.ref('missYouCount').on('value', snap => {
     missYouCount = snap.val() || 0;
     updateMissYouDisplay();
@@ -586,7 +585,7 @@ function escapeHtml(text){
 function renderIdeas(snapshot){
     ideasList.innerHTML = '';
     const ideas = snapshot.val() || {};
-    const ideasArray = Object.entries(ideas).reverse(); // Show newest first
+    const ideasArray = Object.entries(ideas).reverse();
     
     if(ideasArray.length === 0){
         ideasList.innerHTML = '<div style="text-align:center;opacity:0.5;">no ideas yet...</div>';
@@ -607,10 +606,7 @@ function renderIdeas(snapshot){
 function addIdea(){
     const text = ideaInput.value.trim();
     if(text === '') return;
-    
-    const ideasRef = database.ref('ideas');
-    ideasRef.push(text);
-    
+    database.ref('ideas').push(text);
     ideaInput.value = '';
 }
 
@@ -623,7 +619,7 @@ ideaInput.onkeypress = (e) => {
     if(e.key === 'Enter') addIdea();
 };
 
-// Listen to ideas from Firebase
+// Listen to ideas
 database.ref('ideas').on('value', snap => {
     renderIdeas(snap);
 });
