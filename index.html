@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Countdown & Reunion Wires</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <!-- Ubuntu Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            font-family:"Ubuntu Mono",ui-monospace,Menlo,Consolas,monospace;
+            background:#222222;
+            color:#dddddd;
+            min-height:100vh;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            gap:1.25rem;
+            padding:20px;
+        }
+
+        .top-panel{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:0.5rem;
+        }
+
+        #countdown{
+            font-size:clamp(2rem,4.5vw,3rem);
+            font-weight:400;
+            font-variant-numeric:tabular-nums;
+        }
+
+        .mode-toggle{
+            display:flex;
+            align-items:center;
+            gap:0.5rem;
+            font-size:0.9rem;
+            opacity:0.85;
+        }
+
+        .mode-toggle button{
+            padding:0.25rem 0.75rem;
+            background:#333333;
+            color:#dddddd;
+            border-radius:999px;
+            border:1px solid #444444;
+            cursor:pointer;
+            opacity:0.5;
+            transition: opacity 0.2s;
+        }
+        .mode-toggle button.active{
+            opacity:1;
+        }
+        .mode-toggle button:hover{
+            opacity:0.8;
+        }
+
+        #canvas-container{
+            width:94vw;
+            max-width:1000px;
+            position:relative;
+        }
+        canvas{
+            width:100%;
+            height:100%;
+            border-radius:10px;
+            background:#262626;
+            display:block;
+        }
+
+        .bottom-panel{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:0.75rem;
+            margin-top:1rem;
+            width:94vw;
+            max-width:600px;
+        }
+
+        .user-section{
+            width:100%;
+            background:#262626;
+            border:1px solid #444444;
+            border-radius:8px;
+            padding:1rem;
+            margin-bottom:0.5rem;
+        }
+
+        .user-label{
+            font-size:0.85rem;
+            opacity:0.7;
+            margin-bottom:0.5rem;
+        }
+
+        .miss-you-btn{
+            padding:0.5rem 1.5rem;
+            background:#333333;
+            color:#dddddd;
+            border-radius:8px;
+            border:1px solid #444444;
+            cursor:pointer;
+            font-size:0.95rem;
+            font-family:"Ubuntu Mono",ui-monospace,Menlo,Consolas,monospace;
+            transition: all 0.3s;
+            position:relative;
+            overflow:hidden;
+            width:100%;
+        }
+        .miss-you-btn:hover{
+            background:#444444;
+            transform:scale(1.05);
+        }
+        .miss-you-btn.active{
+            background:#dddddd;
+            color:#222222;
+        }
+
+        .idea-input-group{
+            display:flex;
+            gap:0.5rem;
+            width:100%;
+        }
+
+        #idea-input{
+            flex:1;
+            padding:0.5rem 0.75rem;
+            background:#333333;
+            color:#dddddd;
+            border:1px solid #444444;
+            border-radius:6px;
+            font-family:"Ubuntu Mono",ui-monospace,Menlo,Consolas,monospace;
+            font-size:0.9rem;
+        }
+        #idea-input::placeholder{
+            color:#666666;
+        }
+        #idea-input:focus{
+            outline:none;
+            border-color:#dddddd;
+            box-shadow:0 0 8px rgba(221,221,221,0.2);
+        }
+
+        .add-idea-btn{
+            padding:0.5rem 1rem;
+            background:#333333;
+            color:#dddddd;
+            border:1px solid #444444;
+            border-radius:6px;
+            cursor:pointer;
+            font-size:0.9rem;
+            font-family:"Ubuntu Mono",ui-monospace,Menlo,Consolas,monospace;
+            transition:all 0.3s;
+        }
+        .add-idea-btn:hover{
+            background:#444444;
+        }
+
+        .ideas-list{
+            width:100%;
+            max-height:200px;
+            overflow-y:auto;
+            background:#262626;
+            border-radius:6px;
+            border:1px solid #444444;
+            padding:0.5rem;
+            font-size:0.85rem;
+            color:#cccccc;
+        }
+
+        .idea-item{
+            padding:0.5rem;
+            margin-bottom:0.3rem;
+            background:#333333;
+            border-radius:4px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:0.5rem;
+        }
+
+        .idea-text{
+            flex:1;
+            word-break:break-word;
+        }
+
+        .idea-author{
+            font-size:0.75rem;
+            opacity:0.5;
+        }
+
+        .remove-idea-btn{
+            padding:0.2rem 0.5rem;
+            background:#444444;
+            color:#dddddd;
+            border:none;
+            border-radius:3px;
+            cursor:pointer;
+            font-size:0.75rem;
+        }
+        .remove-idea-btn:hover{
+            background:#555555;
+        }
+
+        .info-text{
+            font-size:0.8rem;
+            opacity:0.7;
+            text-align:center;
+        }
+
+        .user-selector{
+            display:flex;
+            gap:0.5rem;
+            margin-bottom:1rem;
+        }
+
+        .user-selector button{
+            padding:0.4rem 0.8rem;
+            background:#333333;
+            color:#dddddd;
+            border:1px solid #444444;
+            border-radius:6px;
+            cursor:pointer;
+            font-size:0.85rem;
+            transition:all 0.2s;
+        }
+
+        .user-selector button.active{
+            background:#dddddd;
+            color:#222222;
+        }
+
+        @keyframes float-up {
+            0% {
+                opacity: 1;
+                transform: translateY(0) translateX(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) translateX(var(--tx)) scale(0.3);
+            }
+        }
+
+        .floating-heart {
+            position: fixed;
+            font-size: 1.5rem;
+            pointer-events: none;
+            animation: float-up 1.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+<div class="top-panel">
+    <div id="countdown">--d --h --m --s</div>
+    <div class="mode-toggle">
+        <button id="mode-time" class="active">countdown</button>
+        <button id="mode-percent">% left</button>
+    </div>
+</div>
+
+<div id="canvas-container">
+    <canvas id="canvas"></canvas>
+</div>
+
+<div class="bottom-panel">
+    <div class="user-selector">
+        <button id="user-you" class="active">you</button>
+        <button id="user-friend">friend</button>
+    </div>
+
+    <div class="user-section">
+        <div class="user-label">your counter:</div>
+        <button class="miss-you-btn" id="miss-you-btn">miss you ❤️</button>
+    </div>
+
+    <div class="user-section">
+        <div class="user-label">friend's counter:</div>
+        <div style="padding:0.5rem;text-align:center;font-size:1.2rem;">
+            <span id="friend-counter">--</span>
+        </div>
+    </div>
+
+    <div id="your-ideas-section">
+        <div class="user-label">your ideas:</div>
+        <div class="idea-input-group">
+            <input 
+                type="text" 
+                id="idea-input" 
+                placeholder="ideas for reunion..."
+                maxlength="80"
+            />
+            <button class="add-idea-btn" id="add-idea-btn">add</button>
+        </div>
+        <div class="ideas-list" id="your-ideas-list"></div>
+    </div>
+
+    <div id="friend-ideas-section" style="margin-top:1rem;">
+        <div class="user-label">friend's ideas:</div>
+        <div class="ideas-list" id="friend-ideas-list"></div>
+    </div>
+
+    <div class="info-text">synced with firebase</div>
+</div>
+
+<script>
+/* ---------- FIREBASE CONFIG ---------- */
+// ⚠️ REPLACE THIS WITH YOUR FIREBASE CONFIG FROM STEP 1
+const firebaseConfig = {
+  apiKey: "AIzaSyA10f0kbWHZGm9EXhpfDsTLKVJxJEN0zJM",
+  authDomain: "miss-you-in-hk.firebaseapp.com",
+  databaseURL: "https://miss-you-in-hk-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "miss-you-in-hk",
+  storageBucket: "miss-you-in-hk.firebasestorage.app",
+  messagingSenderId: "1094541793526",
+  appId: "1:1094541793526:web:05b517e0d28c80467f34d7"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+/* ---------- TIME CONSTANTS (UTC+8) ---------- */
+function inTzOffset(dateStr, offsetHours){
+    const d = new Date(dateStr + ':00');
+    const localOffset = d.getTimezoneOffset()/60;
+    const diff = offsetHours + localOffset;
+    return new Date(d.getTime() - diff*3600*1000);
+}
+
+const TZ = 8;
+const TARGET = inTzOffset('2026-01-11T16:45',TZ);
+const START_GLOBAL = inTzOffset('2025-12-25T18:00',TZ);
+const END_GLOBAL   = TARGET;
+const START_BOTTOM_ABS = inTzOffset('2025-12-25T18:00',TZ);
+const END_BOTTOM_ABS   = inTzOffset('2026-01-02T23:00',TZ);
+const START_TOP_ABS    = inTzOffset('2025-12-31T16:00',TZ);
+const END_TOP_ABS      = TARGET;
+const TIMELINE_START = inTzOffset('2025-12-21T00:00',TZ);
+const TIMELINE_END   = inTzOffset('2026-01-15T00:00',TZ);
+const TOTAL_DURATION = TIMELINE_END - TIMELINE_START;
+const BOTTOM_DURATION = END_BOTTOM_ABS - START_BOTTOM_ABS;
+const TOP_DURATION    = END_TOP_ABS   - START_TOP_ABS;
+
+/* ---------- USER MANAGEMENT ---------- */
+let currentUser = 'you';
+const userBtnYou = document.getElementById('user-you');
+const userBtnFriend = document.getElementById('user-friend');
+
+userBtnYou.onclick = () => {
+    currentUser = 'you';
+    userBtnYou.classList.add('active');
+    userBtnFriend.classList.remove('active');
+};
+
+userBtnFriend.onclick = () => {
+    currentUser = 'friend';
+    userBtnFriend.classList.add('active');
+    userBtnYou.classList.remove('active');
+};
+
+/* ---------- COUNTDOWN / PERCENT SWITCH ---------- */
+let mode = 'time';
+const countdownEl = document.getElementById('countdown');
+const btnTime = document.getElementById('mode-time');
+const btnPercent = document.getElementById('mode-percent');
+
+btnTime.onclick = () => { mode='time'; btnTime.classList.add('active'); btnPercent.classList.remove('active'); };
+btnPercent.onclick = () => { mode='percent'; btnPercent.classList.add('active'); btnTime.classList.remove('active'); };
+
+function updateCountdown(){
+    const now = new Date();
+    if(mode === 'time'){
+        let delta = TARGET - now;
+        if(delta < 0){ delta = 0; }
+        const totalSeconds = Math.floor(delta/1000);
+        const days = Math.floor(totalSeconds/86400);
+        const hours = Math.floor((totalSeconds%86400)/3600);
+        const mins = Math.floor((totalSeconds%3600)/60);
+        const secs = totalSeconds%60;
+        countdownEl.textContent =
+            `${String(days).padStart(2,'0')}d `+
+            `${String(hours).padStart(2,'0')}h `+
+            `${String(mins).padStart(2,'0')}m `+
+            `${String(secs).padStart(2,'0')}s`;
+    }else{
+        const total = END_GLOBAL - START_GLOBAL;
+        const done = Math.max(0, Math.min(total, now - START_GLOBAL));
+        const pctLeft = 100 - (done/total)*100;
+        countdownEl.textContent = `${pctLeft.toFixed(1)}%`;
+    }
+}
+
+/* ---------- COLORS ---------- */
+function randomBrightPair(){
+    const h1 = Math.floor(Math.random()*360);
+    const h2 = (h1 + 120 + Math.floor(Math.random()*60))%360;
+    const s1 = 70 + Math.random()*25;
+    const s2 = 70 + Math.random()*25;
+    const l  = 55 + Math.random()*15;
+    return [
+        `hsl(${h1},${s1}%,${l}%)`,
+        `hsl(${h2},${s2}%,${l}%)`
+    ];
+}
+const [colorTop,colorBottom] = randomBrightPair();
+const colorTopGray    = 'hsl(0,0%,55%)';
+const colorBottomGray = 'hsl(0,0%,55%)';
+
+/* ---------- CANVAS ---------- */
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('canvas-container');
+
+function resizeCanvas(){
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const lineOffset = 0.08 / 3.5 / 2;
+    const lineSeparation = lineOffset * 2;
+    const arcRadiusMax = (Math.max(BOTTOM_DURATION, TOP_DURATION) / 2 / TOTAL_DURATION) * 400;
+    const contentHeight = lineSeparation + arcRadiusMax * 2;
+    const desiredH = contentHeight * 1.25;
+    
+    container.style.height = Math.min(desiredH, vh * 0.55) + 'px';
+
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    drawScene();
+}
+window.addEventListener('resize', resizeCanvas);
+
+function timeToX(t, width){
+    const clamped = Math.min(TIMELINE_END, Math.max(TIMELINE_START,t));
+    return ((clamped - TIMELINE_START)/TOTAL_DURATION)*width;
+}
+
+function smoothPoint(p1, p2, p3){
+    return {
+        x: (p1.x + p2.x + p3.x) / 3,
+        y: (p1.y + p2.y + p3.y) / 3
+    };
+}
+
+function drawWire(opts){
+    const {
+        yBase,
+        colorMain,
+        colorFuture,
+        startAbs,
+        endAbs,
+        now,
+        isTop,
+        arcRadiusTime,
+        width,
+        height
+    } = opts;
+
+    const globalStart = TIMELINE_START;
+    const globalEnd   = TIMELINE_END;
+    const globalDuration = globalEnd - globalStart;
+
+    const startX = 0;
+    const endX   = width;
+
+    const tAbsStart = (startAbs - globalStart)/globalDuration;
+    const tAbsEnd   = (endAbs   - globalStart)/globalDuration;
+    const tAbsMid   = (tAbsStart + tAbsEnd)/2;
+
+    const radiusFrac = arcRadiusTime / globalDuration;
+    const arcRadiusPx = (radiusFrac * width) / 1.5;
+
+    const arcCenterX = startX + (endX-startX)*tAbsMid;
+
+    function path(t){
+        const x = startX + (endX-startX)*t;
+        let y = yBase;
+
+        if(t > tAbsStart && t < tAbsEnd){ 
+            const rel = (t - tAbsStart)/(tAbsEnd - tAbsStart);
+            
+            if(isTop){
+                const arcCenterY = yBase;
+                const angle = Math.PI * rel;
+                y = arcCenterY - arcRadiusPx * Math.sin(angle);
+            }else{
+                const arcCenterY = yBase;
+                const angle = Math.PI * rel;
+                y = arcCenterY + arcRadiusPx * Math.sin(angle);
+            }
+        }
+
+        return {x,y};
+    }
+
+    function strokeSegment(t0,t1,color){
+        const steps = 600;
+        ctx.beginPath();
+        for(let i=0;i<=steps;i++){
+            const t = t0 + (t1-t0)*i/steps;
+            let p = path(t);
+            
+            if(i > 0 && i < steps){
+                const prevT = t0 + (t1-t0)*(i-1)/steps;
+                const nextT = t0 + (t1-t0)*(i+1)/steps;
+                const pPrev = path(prevT);
+                const pNext = path(nextT);
+                p = smoothPoint(pPrev, p, pNext);
+            }
+            
+            if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+        }
+        ctx.strokeStyle = color;
+        ctx.stroke();
+    }
+
+    const tNow = (now - globalStart)/globalDuration;
+    const tSplit = Math.max(0, Math.min(1, tNow));
+
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+
+    ctx.shadowColor = colorMain;
+    ctx.shadowBlur = 6;
+    strokeSegment(0, tSplit, colorMain);
+
+    ctx.shadowBlur = 2;
+    strokeSegment(tSplit, 1, colorFuture);
+
+    let markerPos = path(tSplit);
+    if(tSplit > 0.001 && tSplit < 0.999){
+        const pPrev = path(Math.max(0, tSplit - 0.01));
+        const pNext = path(Math.min(1, tSplit + 0.01));
+        markerPos = smoothPoint(pPrev, markerPos, pNext);
+    }
+    
+    const markerRadius = Math.max(4, Math.min(7, width*0.005));
+    const g = ctx.createRadialGradient(markerPos.x,markerPos.y,0,markerPos.x,markerPos.y,markerRadius*1.4);
+    g.addColorStop(0,'rgba(255,255,255,0.92)');
+    g.addColorStop(0.6,'rgba(255,255,255,0.45)');
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(markerPos.x,markerPos.y,markerRadius*1.4,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+}
+
+function drawScene(){
+    const width  = canvas.width / (window.devicePixelRatio||1);
+    const height = canvas.height / (window.devicePixelRatio||1);
+    ctx.clearRect(0,0,width,height);
+
+    const nowRaw = new Date();
+    const now =
+        nowRaw < TIMELINE_START ? TIMELINE_START :
+        nowRaw > TIMELINE_END   ? TIMELINE_END   : nowRaw;
+
+    const centerY = height*0.5;
+    const offset  = (height*0.08 / 3.5) / 2;
+
+    const bottomRadiusTime = BOTTOM_DURATION/2;
+    const topRadiusTime    = TOP_DURATION/2;
+
+    ctx.lineJoin = 'round';
+
+    drawWire({
+        yBase: centerY + offset,
+        colorMain: colorBottom,
+        colorFuture: colorBottomGray,
+        startAbs: START_BOTTOM_ABS,
+        endAbs: END_BOTTOM_ABS,
+        now,
+        isTop:false,
+        arcRadiusTime: bottomRadiusTime,
+        width,
+        height
+    });
+
+    drawWire({
+        yBase: centerY - offset,
+        colorMain: colorTop,
+        colorFuture: colorTopGray,
+        startAbs: START_TOP_ABS,
+        endAbs: END_TOP_ABS,
+        now,
+        isTop:true,
+        arcRadiusTime: topRadiusTime,
+        width,
+        height
+    });
+}
+
+/* ---------- MISS YOU BUTTON WITH HEARTS ---------- */
+const missYouBtn = document.getElementById('miss-you-btn');
+const friendCounter = document.getElementById('friend-counter');
+
+function createFloatingHearts(){
+    const rect = missYouBtn.getBoundingClientRect();
+    const numHearts = 5;
+    
+    for(let i = 0; i < numHearts; i++){
+        const heart = document.createElement('div');
+        heart.className = 'floating-heart';
+        heart.textContent = '❤️';
+        
+        const tx = (Math.random() - 0.5) * 100;
+        heart.style.setProperty('--tx', tx + 'px');
+        
+        heart.style.left = (rect.left + rect.width/2) + 'px';
+        heart.style.top = (rect.top + rect.height/2) + 'px';
+        
+        document.body.appendChild(heart);
+        
+        setTimeout(() => heart.remove(), 1200);
+    }
+}
+
+missYouBtn.onclick = () => {
+    const user = currentUser === 'you' ? 'you' : 'friend';
+    const countRef = database.ref(`missYouCounter/${user}`);
+    countRef.transaction(current => (current || 0) + 1);
+    
+    createFloatingHearts();
+    missYouBtn.classList.add('active');
+    setTimeout(() => missYouBtn.classList.remove('active'), 300);
+};
+
+// Listen to friend's counter
+database.ref('missYouCounter/friend').on('value', snap => {
+    const count = snap.val() || 0;
+    friendCounter.textContent = count;
+});
+
+database.ref('missYouCounter/you').on('value', snap => {
+    const count = snap.val() || 0;
+    if(count > 0){
+        missYouBtn.textContent = `miss you ❤️ (${count})`;
+    }else{
+        missYouBtn.textContent = 'miss you ❤️';
+    }
+});
+
+/* ---------- IDEAS ---------- */
+const ideaInput = document.getElementById('idea-input');
+const addIdeaBtn = document.getElementById('add-idea-btn');
+const yourIdeasList = document.getElementById('your-ideas-list');
+const friendIdeasList = document.getElementById('friend-ideas-list');
+
+function escapeHtml(text){
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function renderIdeas(snapshot, containerEl, isYours){
+    containerEl.innerHTML = '';
+    const ideas = snapshot.val() || {};
+    const ideasArray = Object.entries(ideas);
+    
+    if(ideasArray.length === 0){
+        containerEl.innerHTML = '<div style="text-align:center;opacity:0.5;">no ideas yet...</div>';
+        return;
+    }
+    
+    ideasArray.forEach(([key, idea]) => {
+        const item = document.createElement('div');
+        item.className = 'idea-item';
+        
+        let html = `
+            <div class="idea-text">${escapeHtml(idea)}</div>
+        `;
+        
+        if(isYours){
+            html += `<button class="remove-idea-btn" onclick="removeIdea('${key}')">✕</button>`;
+        }
+        
+        item.innerHTML = html;
+        containerEl.appendChild(item);
+    });
+}
+
+function addIdea(){
+    const text = ideaInput.value.trim();
+    if(text === '') return;
+    
+    const user = currentUser === 'you' ? 'you' : 'friend';
+    const ideasRef = database.ref(`ideas/${user}`);
+    const newKey = ideasRef.push().key;
+    ideasRef.child(newKey).set(text);
+    
+    ideaInput.value = '';
+}
+
+function removeIdea(key){
+    const user = currentUser === 'you' ? 'you' : 'friend';
+    database.ref(`ideas/${user}/${key}`).remove();
+}
+
+addIdeaBtn.onclick = addIdea;
+ideaInput.onkeypress = (e) => {
+    if(e.key === 'Enter') addIdea();
+};
+
+// Listen to ideas
+database.ref('ideas/you').on('value', snap => {
+    renderIdeas(snap, yourIdeasList, true);
+});
+
+database.ref('ideas/friend').on('value', snap => {
+    renderIdeas(snap, friendIdeasList, false);
+});
+
+/* ---------- INITIALIZATION ---------- */
+resizeCanvas();
+updateCountdown();
+
+setInterval(updateCountdown, 1000);
+setInterval(drawScene, 1000);
+</script>
+</body>
+</html>
