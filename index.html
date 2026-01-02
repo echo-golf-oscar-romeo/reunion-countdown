@@ -10,10 +10,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
-
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{
@@ -250,6 +246,9 @@
     <div class="info-text">synced with firebase</div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
 /* ---------- FIREBASE INIT ---------- */
 const firebaseConfig = {
@@ -262,12 +261,7 @@ const firebaseConfig = {
     appId: "1:1094541793526:web:05b517e0d28c80467f34d7"
 };
 
-try {
-    firebase.initializeApp(firebaseConfig);
-} catch(e) {
-    console.log('Firebase already initialized or error:', e.message);
-}
-
+firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 console.log('Firebase initialized successfully');
 
@@ -365,14 +359,12 @@ function resizeCanvas(){
     canvas.style.height = height + 'px';
     
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    console.log('Canvas resized:', width, 'x', height);
     drawScene();
 }
 
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('load', resizeCanvas);
 
-// Initial resize
 setTimeout(resizeCanvas, 100);
 
 function timeToX(t, width){
@@ -569,7 +561,7 @@ function createFloatingHearts(){
 }
 
 missYouBtn.onclick = () => {
-    database.ref('missYouCount').transaction(current => (current || 0) + 1).catch(err => console.error('Firebase error:', err));
+    database.ref('missYouCount').transaction(current => (current || 0) + 1);
     createFloatingHearts();
     missYouBtn.classList.add('active');
     setTimeout(() => missYouBtn.classList.remove('active'), 300);
@@ -579,7 +571,7 @@ missYouBtn.onclick = () => {
 database.ref('missYouCount').on('value', snap => {
     missYouCount = snap.val() || 0;
     updateMissYouDisplay();
-}, err => console.error('Error reading missYouCount:', err));
+});
 
 /* ---------- IDEAS LIST ---------- */
 const ideaInput = document.getElementById('idea-input');
@@ -616,12 +608,12 @@ function renderIdeas(snapshot){
 function addIdea(){
     const text = ideaInput.value.trim();
     if(text === '') return;
-    database.ref('ideas').push(text).catch(err => console.error('Error adding idea:', err));
+    database.ref('ideas').push(text);
     ideaInput.value = '';
 }
 
 function removeIdea(key){
-    database.ref(`ideas/${key}`).remove().catch(err => console.error('Error removing idea:', err));
+    database.ref(`ideas/${key}`).remove();
 }
 
 addIdeaBtn.onclick = addIdea;
@@ -632,7 +624,7 @@ ideaInput.onkeypress = (e) => {
 // Listen to ideas
 database.ref('ideas').on('value', snap => {
     renderIdeas(snap);
-}, err => console.error('Error reading ideas:', err));
+});
 
 /* ---------- INITIALIZATION ---------- */
 updateCountdown();
