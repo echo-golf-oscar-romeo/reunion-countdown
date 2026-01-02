@@ -90,21 +90,6 @@
             max-width:600px;
         }
 
-        .user-section{
-            width:100%;
-            background:#262626;
-            border:1px solid #444444;
-            border-radius:8px;
-            padding:1rem;
-            margin-bottom:0.5rem;
-        }
-
-        .user-label{
-            font-size:0.85rem;
-            opacity:0.7;
-            margin-bottom:0.5rem;
-        }
-
         .miss-you-btn{
             padding:0.5rem 1.5rem;
             background:#333333;
@@ -117,7 +102,6 @@
             transition: all 0.3s;
             position:relative;
             overflow:hidden;
-            width:100%;
         }
         .miss-you-btn:hover{
             background:#444444;
@@ -196,11 +180,6 @@
             word-break:break-word;
         }
 
-        .idea-author{
-            font-size:0.75rem;
-            opacity:0.5;
-        }
-
         .remove-idea-btn{
             padding:0.2rem 0.5rem;
             background:#444444;
@@ -218,28 +197,6 @@
             font-size:0.8rem;
             opacity:0.7;
             text-align:center;
-        }
-
-        .user-selector{
-            display:flex;
-            gap:0.5rem;
-            margin-bottom:1rem;
-        }
-
-        .user-selector button{
-            padding:0.4rem 0.8rem;
-            background:#333333;
-            color:#dddddd;
-            border:1px solid #444444;
-            border-radius:6px;
-            cursor:pointer;
-            font-size:0.85rem;
-            transition:all 0.2s;
-        }
-
-        .user-selector button.active{
-            background:#dddddd;
-            color:#222222;
         }
 
         @keyframes float-up {
@@ -275,59 +232,32 @@
 </div>
 
 <div class="bottom-panel">
-    <div class="user-selector">
-        <button id="user-you" class="active">you</button>
-        <button id="user-friend">friend</button>
+    <button class="miss-you-btn" id="miss-you-btn">miss you ❤️</button>
+    <div class="idea-input-group">
+        <input 
+            type="text" 
+            id="idea-input" 
+            placeholder="ideas for reunion..."
+            maxlength="80"
+        />
+        <button class="add-idea-btn" id="add-idea-btn">add</button>
     </div>
-
-    <div class="user-section">
-        <div class="user-label">your counter:</div>
-        <button class="miss-you-btn" id="miss-you-btn">miss you ❤️</button>
-    </div>
-
-    <div class="user-section">
-        <div class="user-label">friend's counter:</div>
-        <div style="padding:0.5rem;text-align:center;font-size:1.2rem;">
-            <span id="friend-counter">--</span>
-        </div>
-    </div>
-
-    <div id="your-ideas-section">
-        <div class="user-label">your ideas:</div>
-        <div class="idea-input-group">
-            <input 
-                type="text" 
-                id="idea-input" 
-                placeholder="ideas for reunion..."
-                maxlength="80"
-            />
-            <button class="add-idea-btn" id="add-idea-btn">add</button>
-        </div>
-        <div class="ideas-list" id="your-ideas-list"></div>
-    </div>
-
-    <div id="friend-ideas-section" style="margin-top:1rem;">
-        <div class="user-label">friend's ideas:</div>
-        <div class="ideas-list" id="friend-ideas-list"></div>
-    </div>
-
-    <div class="info-text">synced with firebase</div>
+    <div class="ideas-list" id="ideas-list"></div>
+    <div class="info-text">stored in firebase</div>
 </div>
 
 <script>
 /* ---------- FIREBASE CONFIG ---------- */
-// ⚠️ REPLACE THIS WITH YOUR FIREBASE CONFIG FROM STEP 1
 const firebaseConfig = {
-  apiKey: "AIzaSyA10f0kbWHZGm9EXhpfDsTLKVJxJEN0zJM",
-  authDomain: "miss-you-in-hk.firebaseapp.com",
-  databaseURL: "https://miss-you-in-hk-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "miss-you-in-hk",
-  storageBucket: "miss-you-in-hk.firebasestorage.app",
-  messagingSenderId: "1094541793526",
-  appId: "1:1094541793526:web:05b517e0d28c80467f34d7"
+    apiKey: "AIzaSyA10f0kbWHZGm9EXhpfDsTLKVJxJEN0zJM",
+    authDomain: "miss-you-in-hk.firebaseapp.com",
+    databaseURL: "https://miss-you-in-hk-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "miss-you-in-hk",
+    storageBucket: "miss-you-in-hk.firebasestorage.app",
+    messagingSenderId: "1094541793526",
+    appId: "1:1094541793526:web:05b517e0d28c80467f34d7"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
@@ -341,37 +271,26 @@ function inTzOffset(dateStr, offsetHours){
 
 const TZ = 8;
 const TARGET = inTzOffset('2026-01-11T16:45',TZ);
+
 const START_GLOBAL = inTzOffset('2025-12-25T18:00',TZ);
 const END_GLOBAL   = TARGET;
+
 const START_BOTTOM_ABS = inTzOffset('2025-12-25T18:00',TZ);
 const END_BOTTOM_ABS   = inTzOffset('2026-01-02T23:00',TZ);
+
 const START_TOP_ABS    = inTzOffset('2025-12-31T16:00',TZ);
 const END_TOP_ABS      = TARGET;
+
 const TIMELINE_START = inTzOffset('2025-12-21T00:00',TZ);
 const TIMELINE_END   = inTzOffset('2026-01-15T00:00',TZ);
 const TOTAL_DURATION = TIMELINE_END - TIMELINE_START;
+
 const BOTTOM_DURATION = END_BOTTOM_ABS - START_BOTTOM_ABS;
 const TOP_DURATION    = END_TOP_ABS   - START_TOP_ABS;
 
-/* ---------- USER MANAGEMENT ---------- */
-let currentUser = 'you';
-const userBtnYou = document.getElementById('user-you');
-const userBtnFriend = document.getElementById('user-friend');
-
-userBtnYou.onclick = () => {
-    currentUser = 'you';
-    userBtnYou.classList.add('active');
-    userBtnFriend.classList.remove('active');
-};
-
-userBtnFriend.onclick = () => {
-    currentUser = 'friend';
-    userBtnFriend.classList.add('active');
-    userBtnYou.classList.remove('active');
-};
-
 /* ---------- COUNTDOWN / PERCENT SWITCH ---------- */
 let mode = 'time';
+
 const countdownEl = document.getElementById('countdown');
 const btnTime = document.getElementById('mode-time');
 const btnPercent = document.getElementById('mode-percent');
@@ -426,6 +345,7 @@ const container = document.getElementById('canvas-container');
 function resizeCanvas(){
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    
     const lineOffset = 0.08 / 3.5 / 2;
     const lineSeparation = lineOffset * 2;
     const arcRadiusMax = (Math.max(BOTTOM_DURATION, TOP_DURATION) / 2 / TOTAL_DURATION) * 400;
@@ -605,9 +525,9 @@ function drawScene(){
     });
 }
 
-/* ---------- MISS YOU BUTTON WITH HEARTS ---------- */
+/* ---------- MISS YOU BUTTON ---------- */
 const missYouBtn = document.getElementById('miss-you-btn');
-const friendCounter = document.getElementById('friend-counter');
+let missYouCount = 0;
 
 function createFloatingHearts(){
     const rect = missYouBtn.getBoundingClientRect();
@@ -630,36 +550,32 @@ function createFloatingHearts(){
     }
 }
 
+function updateMissYouDisplay(){
+    if(missYouCount === 0){
+        missYouBtn.textContent = 'miss you ❤️';
+    }else{
+        missYouBtn.textContent = `miss you ❤️ (${missYouCount})`;
+    }
+}
+
 missYouBtn.onclick = () => {
-    const user = currentUser === 'you' ? 'you' : 'friend';
-    const countRef = database.ref(`missYouCounter/${user}`);
-    countRef.transaction(current => (current || 0) + 1);
-    
+    // Increment in Firebase
+    database.ref('missYouCount').transaction(current => (current || 0) + 1);
     createFloatingHearts();
     missYouBtn.classList.add('active');
     setTimeout(() => missYouBtn.classList.remove('active'), 300);
 };
 
-// Listen to friend's counter
-database.ref('missYouCounter/friend').on('value', snap => {
-    const count = snap.val() || 0;
-    friendCounter.textContent = count;
+// Listen to miss you counter from Firebase
+database.ref('missYouCount').on('value', snap => {
+    missYouCount = snap.val() || 0;
+    updateMissYouDisplay();
 });
 
-database.ref('missYouCounter/you').on('value', snap => {
-    const count = snap.val() || 0;
-    if(count > 0){
-        missYouBtn.textContent = `miss you ❤️ (${count})`;
-    }else{
-        missYouBtn.textContent = 'miss you ❤️';
-    }
-});
-
-/* ---------- IDEAS ---------- */
+/* ---------- IDEAS LIST ---------- */
 const ideaInput = document.getElementById('idea-input');
 const addIdeaBtn = document.getElementById('add-idea-btn');
-const yourIdeasList = document.getElementById('your-ideas-list');
-const friendIdeasList = document.getElementById('friend-ideas-list');
+const ideasList = document.getElementById('ideas-list');
 
 function escapeHtml(text){
     const div = document.createElement('div');
@@ -667,30 +583,24 @@ function escapeHtml(text){
     return div.innerHTML;
 }
 
-function renderIdeas(snapshot, containerEl, isYours){
-    containerEl.innerHTML = '';
+function renderIdeas(snapshot){
+    ideasList.innerHTML = '';
     const ideas = snapshot.val() || {};
-    const ideasArray = Object.entries(ideas);
+    const ideasArray = Object.entries(ideas).reverse(); // Show newest first
     
     if(ideasArray.length === 0){
-        containerEl.innerHTML = '<div style="text-align:center;opacity:0.5;">no ideas yet...</div>';
+        ideasList.innerHTML = '<div style="text-align:center;opacity:0.5;">no ideas yet...</div>';
         return;
     }
     
     ideasArray.forEach(([key, idea]) => {
         const item = document.createElement('div');
         item.className = 'idea-item';
-        
-        let html = `
+        item.innerHTML = `
             <div class="idea-text">${escapeHtml(idea)}</div>
+            <button class="remove-idea-btn" onclick="removeIdea('${key}')">✕</button>
         `;
-        
-        if(isYours){
-            html += `<button class="remove-idea-btn" onclick="removeIdea('${key}')">✕</button>`;
-        }
-        
-        item.innerHTML = html;
-        containerEl.appendChild(item);
+        ideasList.appendChild(item);
     });
 }
 
@@ -698,17 +608,14 @@ function addIdea(){
     const text = ideaInput.value.trim();
     if(text === '') return;
     
-    const user = currentUser === 'you' ? 'you' : 'friend';
-    const ideasRef = database.ref(`ideas/${user}`);
-    const newKey = ideasRef.push().key;
-    ideasRef.child(newKey).set(text);
+    const ideasRef = database.ref('ideas');
+    ideasRef.push(text);
     
     ideaInput.value = '';
 }
 
 function removeIdea(key){
-    const user = currentUser === 'you' ? 'you' : 'friend';
-    database.ref(`ideas/${user}/${key}`).remove();
+    database.ref(`ideas/${key}`).remove();
 }
 
 addIdeaBtn.onclick = addIdea;
@@ -716,13 +623,9 @@ ideaInput.onkeypress = (e) => {
     if(e.key === 'Enter') addIdea();
 };
 
-// Listen to ideas
-database.ref('ideas/you').on('value', snap => {
-    renderIdeas(snap, yourIdeasList, true);
-});
-
-database.ref('ideas/friend').on('value', snap => {
-    renderIdeas(snap, friendIdeasList, false);
+// Listen to ideas from Firebase
+database.ref('ideas').on('value', snap => {
+    renderIdeas(snap);
 });
 
 /* ---------- INITIALIZATION ---------- */
