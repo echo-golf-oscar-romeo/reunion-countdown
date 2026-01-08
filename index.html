@@ -41,6 +41,7 @@
             font-size:clamp(2rem,4.5vw,3rem);
             font-weight:400;
             font-variant-numeric:tabular-nums;
+            font-family:"Ubuntu Mono",ui-monospace,Menlo,Consolas,monospace;
         }
 
         .mode-toggle{
@@ -158,19 +159,12 @@
             background:#444444;
         }
 
-        .file-input-wrapper{
-            position:relative;
-            overflow:hidden;
-            display:inline-block;
-            width:100%;
-        }
-
         #photo-input{
             display:none;
         }
 
         .photo-btn{
-            padding:0.5rem 1rem;
+            padding:0.5rem 0.75rem;
             background:#333333;
             color:#dddddd;
             border:1px solid #444444;
@@ -221,6 +215,8 @@
             display:flex;
             justify-content:space-between;
             align-items:center;
+            font-size:0.75rem;
+            opacity:0.7;
         }
 
         .remove-idea-btn{
@@ -284,18 +280,12 @@
             maxlength="200"
         />
         <button class="add-idea-btn" id="add-idea-btn">add</button>
-    </div>
-    <div class="idea-input-group">
         <input type="file" id="photo-input" accept="image/*">
-        <button class="photo-btn" id="photo-btn">📸 photo</button>
+        <button class="photo-btn" id="photo-btn">📸</button>
     </div>
     <div class="ideas-list" id="ideas-list"></div>
     <div class="info-text">synced with firebase</div>
 </div>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
 /* ---------- FIREBASE INIT ---------- */
@@ -634,15 +624,25 @@ photoBtn.onclick = () => photoInput.click();
 
 photoInput.onchange = (e) => {
     selectedFile = e.target.files[0];
-    if(selectedFile){
-        photoBtn.textContent = '✓ ' + selectedFile.name.substring(0, 15);
-    }
 };
 
 function escapeHtml(text){
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function formatDate(timestamp){
+    if(!timestamp) return 'No date';
+    
+    // Handle both millisecond timestamps and second timestamps
+    let ts = timestamp;
+    if(ts < 10000000000) ts = ts * 1000; // Convert seconds to milliseconds if needed
+    
+    const date = new Date(ts);
+    if(isNaN(date.getTime())) return 'Invalid date';
+    
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 }
 
 function renderIdeas(snapshot){
@@ -661,17 +661,24 @@ function renderIdeas(snapshot){
         
         let html = '';
         
-        if(idea.text){
-            html += `<div class="idea-text">${escapeHtml(idea.text)}</div>`;
+        // Handle both old string format and new object format
+        if(typeof idea === 'string'){
+            html += `<div class="idea-text">${escapeHtml(idea)}</div>`;
+        } else {
+            if(idea.text){
+                html += `<div class="idea-text">${escapeHtml(idea.text)}</div>`;
+            }
+            
+            if(idea.photoUrl){
+                html += `<img src="${idea.photoUrl}" class="idea-image" alt="idea photo">`;
+            }
         }
         
-        if(idea.photoUrl){
-            html += `<img src="${idea.photoUrl}" class="idea-image" alt="idea photo">`;
-        }
+        const dateStr = typeof idea === 'string' ? 'old' : formatDate(idea.timestamp);
         
         html += `
             <div class="idea-bottom">
-                <span>${new Date(idea.timestamp).toLocaleDateString()}</span>
+                <span>${dateStr}</span>
                 <button class="remove-idea-btn" onclick="removeIdea('${key}')">✕</button>
             </div>
         `;
@@ -712,7 +719,7 @@ async function addIdea(){
     ideaInput.value = '';
     selectedFile = null;
     photoInput.value = '';
-    photoBtn.textContent = '📸 photo';
+    photoBtn.textContent = '📸';
 }
 
 function removeIdea(key){
