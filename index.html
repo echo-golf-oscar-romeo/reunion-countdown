@@ -191,7 +191,7 @@
         }
 
         .idea-item{
-            padding:0.5rem 2.5rem 0.5rem 0.5rem;
+            padding:0.5rem 1.5rem 0.5rem 0.5rem;
             margin-bottom:0.3rem;
             background:#333333;
             border-radius:4px;
@@ -653,7 +653,7 @@ function formatDate(timestamp){
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     
-    return `${hours}:${minutes} ${ampm} ${day}-${month}-${year}`;
+    return `${hours}:${minutes} ${day}-${month}-${year}`;
 }
 
 function renderIdeas(snapshot){
