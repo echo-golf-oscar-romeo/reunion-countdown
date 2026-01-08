@@ -198,6 +198,7 @@
             display:flex;
             flex-direction:column;
             gap:0.5rem;
+            position:relative;
         }
 
         .idea-text{
@@ -227,6 +228,9 @@
             border-radius:3px;
             cursor:pointer;
             font-size:0.75rem;
+            position:absolute;
+            top:0.5rem;
+            right:0.5rem;
         }
         .remove-idea-btn:hover{
             background:#555555;
@@ -642,7 +646,14 @@ function formatDate(timestamp){
     const date = new Date(ts);
     if(isNaN(date.getTime())) return 'Invalid date';
     
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = date.getHours() >= 12 ? 'pm' : 'am';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${hours}:${minutes} ${ampm} ${day}-${month}-${year}`;
 }
 
 function renderIdeas(snapshot){
@@ -674,12 +685,12 @@ function renderIdeas(snapshot){
             }
         }
         
-        const dateStr = typeof idea === 'string' ? 'old' : formatDate(idea.timestamp);
+        const dateStr = typeof idea === 'string' ? 'timeless' : formatDate(idea.timestamp);
         
         html += `
+            <button class="remove-idea-btn" onclick="removeIdea('${key}')">✕</button>
             <div class="idea-bottom">
                 <span>${dateStr}</span>
-                <button class="remove-idea-btn" onclick="removeIdea('${key}')">✕</button>
             </div>
         `;
         
