@@ -680,12 +680,14 @@ function renderIdeas(snapshot){
                 html += `<div class="idea-text">${escapeHtml(idea.text)}</div>`;
             }
             
-            if(idea.photoUrl){
+            if(idea.photoBase64){
+                html += `<img src="${idea.photoBase64}" class="idea-image" alt="idea photo">`;
+            } else if(idea.photoUrl){
                 html += `<img src="${idea.photoUrl}" class="idea-image" alt="idea photo">`;
             }
         }
         
-        const dateStr = typeof idea === 'string' ? 'timeless' : formatDate(idea.timestamp);
+        const dateStr = typeof idea === 'string' ? 'old' : formatDate(idea.timestamp);
         
         html += `
             <button class="remove-idea-btn" onclick="removeIdea('${key}')">✕</button>
@@ -712,18 +714,19 @@ async function addIdea(){
         timestamp: new Date().getTime()
     };
     
-    // If photo selected, upload it first
+    // If photo selected, convert to base64 and store in database
     if(selectedFile){
-        const filename = Date.now() + '_' + selectedFile.name;
-        const storageRef = storage.ref('ideas/' + filename);
-        
-        try {
-            await storageRef.put(selectedFile);
-            ideaData.photoUrl = await storageRef.getDownloadURL();
-        } catch(err){
-            alert('Photo upload failed: ' + err.message);
-            return;
-        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            ideaData.photoBase64 = e.target.result;
+            database.ref('ideas').push(ideaData);
+            ideaInput.value = '';
+            selectedFile = null;
+            photoInput.value = '';
+            photoBtn.textContent = '📸';
+        };
+        reader.readAsDataURL(selectedFile);
+        return;
     }
     
     database.ref('ideas').push(ideaData);
